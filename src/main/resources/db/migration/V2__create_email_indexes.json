@@ -1,0 +1,8 @@
+{
+  "createIndexes": "email",
+  "indexes": [
+    { "key": { "sourceEventId": 1 }, "name": "ux_email_source_event_id", "unique": true },
+    { "key": { "customerId": 1 }, "name": "ix_email_customer_id" },
+    { "key": { "sentAt": -1 }, "name": "ix_email_sent_at" }
+  ]
+}

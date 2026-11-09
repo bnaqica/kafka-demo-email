@@ -1,0 +1,49 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: kafka-demo-email
+  mongodb:
+    uri: ${MONGODB_URI}
+    representation:
+      uuid: standard
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    consumer:
+      group-id: kafka-demo-email
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      properties:
+        enable.idempotence: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${JWT_ISSUER_URI}
+
+app:
+  kafka:
+    topics:
+      customer-events: customer-events
+      email-events: email-events
+  email:
+    from: no-reply@kafka-demo.local
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+# API docs are only switched on by the `local` profile
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
