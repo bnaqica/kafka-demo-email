@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 
 import com.kafkademo.email.dto.request.EmailRequest;
 import com.kafkademo.email.dto.response.EmailResponse;
+import com.kafkademo.email.dto.response.PageResponse;
 import com.kafkademo.email.entity.EmailMessage;
 import com.kafkademo.email.entity.EmailStatus;
 import com.kafkademo.email.exception.EmailNotFoundException;
@@ -15,6 +16,7 @@ import com.kafkademo.email.repository.EmailMessageRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +24,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 @ExtendWith(MockitoExtension.class)
 class EmailServiceImplTest {
@@ -73,6 +77,31 @@ class EmailServiceImplTest {
     }
 
     @Test
+    void createStoresTheFilterFields() {
+        when(repository.save(any(EmailMessage.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        EmailResponse created = service.create(request(SOURCE_EVENT_ID));
+
+        assertThat(created.lastName()).isEqualTo("Lovelace");
+        assertThat(created.state()).isEqualTo("NY");
+        assertThat(created.eventType()).isEqualTo("customer-addition");
+    }
+
+    @Test
+    void searchReturnsAPageOfResponses() {
+        when(repository.search("lov", "NY", PageRequest.of(1, 5)))
+                .thenReturn(new PageImpl<>(List.of(existing()), PageRequest.of(1, 5), 6));
+
+        PageResponse<EmailResponse> page = service.search("lov", "NY", 1, 5);
+
+        assertThat(page.content()).extracting(EmailResponse::id).containsExactly(ID);
+        assertThat(page.page()).isEqualTo(1);
+        assertThat(page.size()).isEqualTo(5);
+        assertThat(page.totalElements()).isEqualTo(6);
+        assertThat(page.totalPages()).isEqualTo(2);
+    }
+
+    @Test
     void deleteRemovesExistingEmail() {
         EmailMessage email = existing();
         when(repository.findById(ID)).thenReturn(Optional.of(email));
@@ -91,7 +120,16 @@ class EmailServiceImplTest {
 
     private static EmailRequest request(UUID sourceEventId) {
         return new EmailRequest(
-                sourceEventId, UUID.randomUUID(), "a@test.com", "b@test.com", "New subject", "Body", EmailStatus.SENT);
+                sourceEventId,
+                UUID.randomUUID(),
+                "a@test.com",
+                "b@test.com",
+                "New subject",
+                "Body",
+                EmailStatus.SENT,
+                "Lovelace",
+                "NY",
+                "customer-addition");
     }
 
     private static EmailMessage existing() {
@@ -104,6 +142,9 @@ class EmailServiceImplTest {
                 "Old",
                 "Body",
                 EmailStatus.SENT,
-                SENT);
+                SENT,
+                "Lovelace",
+                "NY",
+                "customer-addition");
     }
 }

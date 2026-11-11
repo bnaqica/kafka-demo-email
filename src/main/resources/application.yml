@@ -26,12 +26,12 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: ${JWT_ISSUER_URI}
+          audiences: kafka-demo-api
 
 app:
   kafka:
     topics:
-      customer-events: customer-events
-      email-events: email-events
+      customer-change-event: customer-change-event
   email:
     from: no-reply@kafka-demo.local
 

@@ -2,6 +2,7 @@ package com.kafkademo.email.service;
 
 import com.kafkademo.email.dto.request.EmailRequest;
 import com.kafkademo.email.dto.response.EmailResponse;
+import com.kafkademo.email.dto.response.PageResponse;
 import com.kafkademo.email.entity.EmailMessage;
 import com.kafkademo.email.exception.EmailNotFoundException;
 import com.kafkademo.email.repository.EmailMessageRepository;
@@ -11,6 +12,8 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -30,10 +33,14 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
-    public List<EmailResponse> findAll() {
-        return repository.findAllByOrderBySentAtDesc().stream()
-                .map(this::toResponse)
-                .toList();
+    public PageResponse<EmailResponse> search(String lastName, String state, int page, int size) {
+        Page<EmailMessage> results = repository.search(lastName, state, PageRequest.of(page, size));
+        return new PageResponse<>(
+                results.getContent().stream().map(this::toResponse).toList(),
+                results.getNumber(),
+                results.getSize(),
+                results.getTotalElements(),
+                results.getTotalPages());
     }
 
     @Override
@@ -82,6 +89,9 @@ public class EmailServiceImpl implements EmailService {
                 .body(request.body())
                 .status(request.status())
                 .sentAt(sentAt)
+                .lastName(request.lastName())
+                .state(request.state())
+                .eventType(request.eventType())
                 .build();
     }
 
@@ -96,6 +106,9 @@ public class EmailServiceImpl implements EmailService {
                 .body(email.body())
                 .status(email.status())
                 .sentAt(email.sentAt())
+                .lastName(email.lastName())
+                .state(email.state())
+                .eventType(email.eventType())
                 .build();
     }
 }

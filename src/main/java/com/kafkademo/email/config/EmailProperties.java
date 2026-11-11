@@ -3,14 +3,11 @@ package com.kafkademo.email.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * Binds the {@code app.*} block of application.yml.
+ * Binds {@code app.email} in application.yml. The topic name is read straight from {@code app.kafka.topics} by the
+ * listener's placeholder, so it isn't bound here.
  */
 @ConfigurationProperties(prefix = "app")
-public record EmailProperties(Kafka kafka, Email email) {
-
-    public record Kafka(Topics topics) {}
-
-    public record Topics(String customerEvents, String emailEvents) {}
+public record EmailProperties(Email email) {
 
     public record Email(String from) {}
 }

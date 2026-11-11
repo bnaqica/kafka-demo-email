@@ -1,6 +1,6 @@
 # kafka-demo-email
 
-Listens to `customer-events`, sends a welcome email for each `CUSTOMER_CREATED`, stores it in MongoDB, and publishes `EMAIL_SENT` to `email-events`.
+Listens to `customer-change-event`, saves each incoming event in MongoDB, skips any it has already processed, and sends the matching email: a welcome, a change notice, or a removal notice.
 
 Part of the Kafka Demo system — see [docs/architecture.md](docs/architecture.md).
 
@@ -9,8 +9,8 @@ Part of the Kafka Demo system — see [docs/architecture.md](docs/architecture.m
 | Stack | Java 25, Spring Boot 4.1, Gradle 9.9 (wrapper), Lombok, SLF4J (Logback), Jib |
 | Data store | MongoDB, schema managed by Flyway |
 | Port | 8082 |
-| Produces | `email-events` (`EMAIL_SENT`) |
-| Consumes | `customer-events` (group `kafka-demo-email`) |
+| Produces | — |
+| Consumes | `customer-change-event` (group `kafka-demo-email`) |
 
 ## Prerequisites
 
@@ -37,23 +37,28 @@ Try it:
 Create a customer in kafka-demo-customer, then:
 
 ```bash
-curl -s localhost:8082/api/emails
+curl -s -H "Authorization: Bearer $TOKEN" localhost:8082/api/emails
 ```
 
 ## API
 
-Every endpoint except `/actuator/health` needs a Keycloak bearer token in the `Authorization` header, and returns 401
-without one. Authentication is off in the `local` profile, which `./gradlew bootRun` uses by default. To get a token, see
-the Keycloak section of the local-docker README.
+Every endpoint except `/actuator/health` needs a Keycloak bearer token in the `Authorization` header in every profile,
+and the `customer-admin` role: 401 without a token, 403 without the role. To get a token, see the Keycloak section of the
+local-docker README. Keycloak must be running to call the API locally.
 
 | Method | Path | Description |
 |---|---|---|
 | `POST` | `/api/emails` | Create an email record, without sending it. Body: `{"customerId","from","to","subject","body","status"}`, plus optional `sourceEventId`. 201 + `Location`; 409 if `sourceEventId` is already used. |
-| `GET` | `/api/emails` | All emails sent, newest first. |
+| `GET` | `/api/emails` | One page of emails, newest first. Query: `lastName` (start of the name, ignoring case), `state` (exact, ignoring case), `page` (from 0), `size` (default 20, max 100). Returns `{content, page, size, totalElements, totalPages}`. |
 | `GET` | `/api/emails/{id}` | One email; 404 if unknown. |
 | `GET` | `/api/emails/customer/{customerId}` | Emails for one customer. |
 | `PUT` | `/api/emails/{id}` | Update an email. Same body as create; `sourceEventId` is ignored. 404 if unknown. |
 | `DELETE` | `/api/emails/{id}` | Delete an email. 204; 404 if unknown. |
+| `POST` | `/api/emails/incoming-events` | Create an incoming event record. 201; 409 if the `eventId` exists. |
+| `GET` | `/api/emails/incoming-events` | All incoming event records. |
+| `GET` | `/api/emails/incoming-events/{eventId}` | One record; 404 if unknown. |
+| `PUT` | `/api/emails/incoming-events/{eventId}` | Update a record. 404 if unknown. |
+| `DELETE` | `/api/emails/incoming-events/{eventId}` | Delete a record. 204; 404 if unknown. |
 | `GET` | `/actuator/health` | Health check. |
 
 ## Test and format

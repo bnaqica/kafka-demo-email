@@ -10,6 +10,6 @@ public class LoggingEmailSender implements EmailSender {
 
     @Override
     public void send(EmailRequest email) {
-        log.info("Sending email '{}' to {}", email.subject(), email.to());
+        log.info("Sending {} email for event {}", email.eventType(), email.sourceEventId());
     }
 }

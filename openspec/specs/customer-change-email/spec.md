@@ -50,16 +50,30 @@ An event with status `RECEIVED` SHALL be processed again when redelivered. If an
 - **WHEN** an event is `RECEIVED` with a stored email and is delivered again
 - **THEN** no second email is sent and the event becomes `PROCESSED`
 
-### Requirement: Failures and unknown types
-Unknown event types SHALL be ignored and not saved. Malformed events SHALL go to `customer-change-event-dlq` without retries, and send failures after three retries.
+### Requirement: Unknown types ignored
+Events with an `eventType` this service does not handle SHALL be ignored and not saved.
 
 #### Scenario: Unknown type
 - **WHEN** an event with an unrecognized `eventType` arrives
 - **THEN** no email is sent and no record is saved
 
+### Requirement: Malformed events dead-lettered
+A malformed event SHALL go to `customer-change-event-dlq` without retries, and nothing SHALL be saved or sent for it. An event is malformed when it is not valid JSON, has no `eventType`, or lacks a field its type needs: `eventId`, `occurredAt`, `customerId`, `firstName`, `lastName`, `email`, `state` and `changes` for every type, plus the `changes` parts its type carries.
+
 #### Scenario: Malformed JSON
 - **WHEN** a record is not valid JSON
 - **THEN** it is published to `customer-change-event-dlq` without retries
+
+#### Scenario: Missing field for the type
+- **WHEN** a `customer-phone-add` event has no `changes.phone`
+- **THEN** it is published to `customer-change-event-dlq` without retries, and no record or email is saved
+
+### Requirement: Other failures retried
+Any other failure, such as a failed send or store, SHALL be retried three times one second apart and then go to `customer-change-event-dlq`.
+
+#### Scenario: Send keeps failing
+- **WHEN** sending an email fails on every attempt
+- **THEN** the event is retried three times and then published to `customer-change-event-dlq`, and its record stays `RECEIVED`
 
 ### Requirement: No email-sent event
 The service SHALL NOT publish an event after sending an email.

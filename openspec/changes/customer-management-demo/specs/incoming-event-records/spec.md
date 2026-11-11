@@ -13,6 +13,17 @@ Each record SHALL hold the `eventId` as its identifier, `eventType`, `customerId
 - **WHEN** an event has been processed
 - **THEN** its record holds the original payload unchanged and a `processedAt` time
 
+### Requirement: Processing time follows the status
+`receivedAt` SHALL be set when a record is created and never changed. `processedAt` SHALL be set the first time a record's status becomes `PROCESSED`, kept while it stays `PROCESSED`, and cleared when the status is set to anything else.
+
+#### Scenario: Record marked processed
+- **WHEN** a `RECEIVED` record is updated to `PROCESSED`
+- **THEN** its `processedAt` is set and its `receivedAt` is unchanged
+
+#### Scenario: Record set back to received
+- **WHEN** a `PROCESSED` record is updated to `RECEIVED`
+- **THEN** its `processedAt` is cleared
+
 ### Requirement: Incoming event CRUD
 The API SHALL support `POST` and `GET` on `/api/emails/incoming-events` and `GET`, `PUT` and `DELETE` on `/api/emails/incoming-events/{eventId}`.
 

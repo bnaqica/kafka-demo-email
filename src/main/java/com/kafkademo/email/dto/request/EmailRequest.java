@@ -4,6 +4,7 @@ import com.kafkademo.email.entity.EmailStatus;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.util.UUID;
 import lombok.Builder;
 
@@ -20,4 +21,7 @@ public record EmailRequest(
         @NotBlank @Email String to,
         @NotBlank String subject,
         @NotBlank String body,
-        @NotNull EmailStatus status) {}
+        @NotNull EmailStatus status,
+        @Size(max = 100) String lastName,
+        @Size(max = 2) String state,
+        @Size(max = 50) String eventType) {}

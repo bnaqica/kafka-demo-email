@@ -1,5 +1,6 @@
 package com.kafkademo.email.config;
 
+import com.kafkademo.email.exception.MalformedEventException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.TopicPartition;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -18,7 +19,7 @@ import tools.jackson.core.JacksonException;
 public class AppConfig {
     /**
      * Retries a failing record 3 times, one second apart, then publishes it to {@code <topic>-dlq}.
-     * Malformed JSON is never going to succeed, so it goes straight to the DLQ. Spring Boot wires
+     * Malformed JSON or missing fields are never going to succeed, so they go straight to the DLQ. Spring Boot wires
      * this bean into the default listener container factory.
      */
     @Bean
@@ -31,7 +32,7 @@ public class AppConfig {
                     recoverer.accept(record, ex);
                 },
                 new FixedBackOff(1000L, 3L));
-        handler.addNotRetryableExceptions(JacksonException.class);
+        handler.addNotRetryableExceptions(JacksonException.class, MalformedEventException.class);
         return handler;
     }
 }

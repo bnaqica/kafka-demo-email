@@ -15,4 +15,7 @@ public record EmailResponse(
         String subject,
         String body,
         EmailStatus status,
-        Instant sentAt) {}
+        Instant sentAt,
+        String lastName,
+        String state,
+        String eventType) {}

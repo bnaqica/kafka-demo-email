@@ -5,11 +5,9 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
-public interface EmailMessageRepository extends MongoRepository<EmailMessage, UUID> {
+public interface EmailMessageRepository extends MongoRepository<EmailMessage, UUID>, EmailSearchRepository {
 
     boolean existsBySourceEventId(UUID sourceEventId);
-
-    List<EmailMessage> findAllByOrderBySentAtDesc();
 
     List<EmailMessage> findByCustomerIdOrderBySentAtDesc(UUID customerId);
 }

@@ -1,0 +1,6 @@
+{
+  "createIndexes": "email",
+  "indexes": [
+    { "key": { "lastName": 1, "state": 1 }, "name": "ix_email_last_name_state" }
+  ]
+}

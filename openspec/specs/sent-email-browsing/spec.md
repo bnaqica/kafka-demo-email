@@ -38,3 +38,26 @@ Each email created from an event SHALL store the event's `lastName`, `state` and
 #### Scenario: Stored fields
 - **WHEN** an email is created from an event for a customer in NY
 - **THEN** the email response has `state` NY and the customer's `lastName`
+
+### Requirement: Email CRUD
+The API SHALL support `POST` on `/api/emails`, `GET`, `PUT` and `DELETE` on `/api/emails/{id}`, and `GET` on `/api/emails/customer/{customerId}`, which returns that customer's emails, newest first. A created email without a `sourceEventId` SHALL get a generated one. An update SHALL keep the email's `sourceEventId` and `sentAt`.
+
+#### Scenario: Create an email
+- **WHEN** a valid email is posted
+- **THEN** the API responds 201 with the email and its id
+
+#### Scenario: Duplicate source event
+- **WHEN** an email is posted with a `sourceEventId` another email has
+- **THEN** the API responds 409
+
+#### Scenario: Unknown email
+- **WHEN** a client requests an email id that does not exist
+- **THEN** the API responds 404
+
+#### Scenario: Emails for a customer
+- **WHEN** a client calls `GET /api/emails/customer/{customerId}`
+- **THEN** only that customer's emails are returned, newest first
+
+#### Scenario: Delete an email
+- **WHEN** an email is deleted
+- **THEN** the API responds 204

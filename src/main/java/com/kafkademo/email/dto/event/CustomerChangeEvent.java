@@ -3,17 +3,14 @@ package com.kafkademo.email.dto.event;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * Consumed from {@code customer-events}. Owned by kafka-demo-customer; see docs/kafka-events.md.
- */
-public record CustomerCreatedEvent(
+/** Payload consumed from the {@code customer-change-event} topic. See docs/kafka-events.md for the contract. */
+public record CustomerChangeEvent(
         UUID eventId,
         String eventType,
         Instant occurredAt,
         UUID customerId,
         String firstName,
         String lastName,
-        String email) {
-
-    public static final String TYPE = "CUSTOMER_CREATED";
-}
+        String email,
+        String state,
+        CustomerChanges changes) {}

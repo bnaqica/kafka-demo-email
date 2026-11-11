@@ -25,6 +25,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, "An email for this sourceEventId already exists");
     }
 
+    @ExceptionHandler(IncomingEventNotFoundException.class)
+    public ProblemDetail handleIncomingEventNotFound(IncomingEventNotFoundException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(DuplicateIncomingEventException.class)
+    public ProblemDetail handleDuplicateIncomingEvent(DuplicateIncomingEventException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
     @ExceptionHandler(Exception.class)
     ProblemDetail handleUnexpected(Exception exception) throws Exception {
         // Spring Security has to see these to answer 401 or 403

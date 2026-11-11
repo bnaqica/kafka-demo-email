@@ -1,6 +1,6 @@
 package com.kafkademo.email.listener;
 
-import com.kafkademo.email.service.WelcomeEmailService;
+import com.kafkademo.email.service.CustomerChangeEmailService;
 import lombok.RequiredArgsConstructor;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -10,10 +10,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class CustomerEventListener {
 
-    private final WelcomeEmailService welcomeEmailService;
+    private final CustomerChangeEmailService emailService;
 
-    @KafkaListener(topics = "${app.kafka.topics.customer-events}")
-    public void onCustomerEvent(ConsumerRecord<String, String> record) {
-        welcomeEmailService.handleCustomerEvent(record.value());
+    @KafkaListener(topics = "${app.kafka.topics.customer-change-event}")
+    public void onCustomerChange(ConsumerRecord<String, String> record) {
+        emailService.handle(record.value());
     }
 }

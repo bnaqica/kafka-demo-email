@@ -4,15 +4,13 @@
 
 ```mermaid
 flowchart LR
-    UI[kafka-demo-ui<br/>React :5173] -->|POST/GET /api/customers| C[kafka-demo-customer<br/>:8081]
+    UI[kafka-demo-ui<br/>React :5173] -->|/api/customers| C[kafka-demo-customer<br/>:8081]
     UI -->|GET /api/emails| E[kafka-demo-email<br/>:8082]
     UI -->|GET /api/analytics| A[kafka-demo-analytics<br/>:8083]
     C --- PG[(Postgres<br/>kafka_demo_customer_db)]
-    C -->|CUSTOMER_CREATED| T1{{customer-events}}
+    C -->|7 event types| T1{{customer-change-event}}
     T1 --> E
     T1 --> A
-    E -->|EMAIL_SENT| T2{{email-events}}
-    T2 --> A
     E --- M1[(MongoDB<br/>kafka_demo_email_db)]
     A --- M2[(MongoDB<br/>kafka_demo_analytics_db)]
 ```
@@ -20,32 +18,34 @@ flowchart LR
 
 | Repo | Role | Port | Data store |
 |---|---|---|---|
-| kafka-demo-customer | Owns customers, publishes `customer-events` | 8081 | Postgres |
-| kafka-demo-email | Sends a welcome email per new customer, publishes `email-events` | 8082 | MongoDB |
-| kafka-demo-analytics | Counts every event on `customer-events` and `email-events` | 8083 | MongoDB |
+| kafka-demo-customer | Owns customers and phones, publishes `customer-change-event` | 8081 | Postgres |
+| kafka-demo-email | Sends an email for each customer change | 8082 | MongoDB |
+| kafka-demo-analytics | Saves every event on `customer-change-event` | 8083 | MongoDB |
 | kafka-demo-ui | React UI over all three | 5173 | — |
-| local-docker | Kafka, Postgres, MongoDB for local dev | — | — |
+| local-docker | Kafka, Postgres, MongoDB, Keycloak for local dev | — | — |
 
 ## This service: kafka-demo-email
 
-Listens to `customer-events`, sends a welcome email for each `CUSTOMER_CREATED`, stores it in MongoDB, and publishes `EMAIL_SENT` to `email-events`.
+Listens to `customer-change-event`, saves each incoming event in MongoDB, skips any it has already processed, and sends the matching email: a welcome, a change notice, or a removal notice.
 
-- **Produces:** `email-events` (`EMAIL_SENT`)
-- **Consumes:** `customer-events` (group `kafka-demo-email`)
+- **Produces:** —
+- **Consumes:** `customer-change-event` (group `kafka-demo-email`)
 - **Stores:** MongoDB
 
 ## Design decisions
 
-- **Idempotent on `eventId`.** The `email` collection has a unique index on `sourceEventId`, and
-  `WelcomeEmailService` skips events it has already handled.
+- **Idempotent on `eventId`.** Each event is saved in `incoming_event` as `RECEIVED` before sending and set to
+  `PROCESSED` afterwards, and only `PROCESSED` events are skipped, so a failed send is retried. The `email` collection
+  also has a unique index on `sourceEventId`, and `CustomerChangeEmailService` checks it before sending, so a crash
+  after the email is stored doesn't send it again.
+- **`lastName` and `state` are copied onto each email**, because this service can't look up a customer and the list
+  has to filter by them.
 - **Sending is a stub.** `LoggingEmailSender` just logs. Swap in an SMTP/SES implementation of
   `EmailSender` to send for real.
 - **Retries then DLQ.** `AppConfig.kafkaErrorHandler` retries 3× (1 s apart), then publishes to
-  `customer-events-dlq`. Bad JSON goes straight to the DLQ.
-- **`EMAIL_SENT` is published synchronously** so a Kafka failure fails the record and it is retried.
+  `customer-change-event-dlq`. Bad JSON and missing fields go straight to the DLQ.
 
 ## Known gaps
 
-- The email is saved before `EMAIL_SENT` is published; if publishing keeps failing the record goes
-  to the DLQ and, on replay, is skipped as a duplicate without publishing. An outbox would close this.
-- No Testcontainers integration tests yet.
+- A crash after sending but before the email is stored sends it again on redelivery.
+- Emails stored before this version have no `lastName` or `state`, so filters leave them out.
